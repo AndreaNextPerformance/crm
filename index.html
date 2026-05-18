@@ -178,6 +178,7 @@ tr.urgente:hover td{background:#220d0d;}
     <div class="content" id="main-content"></div>
   </div>
 </div>
+
 <div class="overlay" id="contact-overlay">
   <div class="modal">
     <h2 id="modal-title">Aggiungi contatto</h2>
@@ -189,6 +190,7 @@ tr.urgente:hover td{background:#220d0d;}
       <div class="fg"><label>Tipo contatto</label><select id="f-tipo"><option>Acquirente</option><option>Venditore</option><option>Entrambi</option></select></div>
       <div class="fg"><label>Zona</label><input type="text" id="f-zona" placeholder="es. Navigli"></div>
       <div class="fg"><label>Budget / Valore €</label><input type="number" id="f-budget" placeholder="350000"></div>
+      <div class="fg"><label>Commissione €</label><input type="number" id="f-comm" placeholder="es. 15000"></div>
       <div class="fg"><label>Tempistiche</label><select id="f-tempistiche"><option>Subito</option><option>3 mesi</option><option>6 mesi</option><option>Non definite</option></select></div>
       <div class="fg"><label>Stato</label><select id="f-stato"><option>Da chiamare</option><option>In attesa</option><option>In trattativa</option><option>Chiuso</option><option>Perso</option></select></div>
       <div class="fg"><label>Assegnato a</label><select id="f-agente"></select></div>
@@ -202,6 +204,7 @@ tr.urgente:hover td{background:#220d0d;}
     </div>
   </div>
 </div>
+
 <div class="overlay" id="logo-overlay">
   <div class="modal" style="width:400px;text-align:center">
     <h2>Logo aziendale</h2>
@@ -220,10 +223,12 @@ tr.urgente:hover td{background:#220d0d;}
     </div>
   </div>
 </div>
+
 <div class="detail-overlay" id="detail-overlay">
   <div class="detail-panel" id="detail-panel"></div>
 </div>
 <div class="toast" id="toast"></div>
+
 <script>
 const SUPABASE_URL='https://twjmeahecupedhwubmhx.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3am1lYWhlY3VwZWRod3VibWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3NjMzMzMsImV4cCI6MjA5NDMzOTMzM30.4mRsYp_YwoNXL4hYO_kwYuIHYGyoLpjmSGUSKTcI-U4';
@@ -268,55 +273,103 @@ function applyFilters(){const s=(document.getElementById('srch')||{value:''}).va
 function renderPipeline(){const list=contacts.filter(c=>c.stato==='In trattativa').sort((a,b)=>(b.comm||0)-(a.comm||0));const tot=list.reduce((s,c)=>s+(c.comm||0),0);const cards=list.map(c=>`<div class="pipe-card" onclick="openDetail(${c.id})"><div style="flex:1"><div style="font-weight:500;font-size:14px">${c.nome}</div><div style="font-size:12px;color:var(--t2)">${c.tipo} · ${c.zona} · ${c.agente}</div></div><div><div style="font-size:11px;color:#555;margin-bottom:2px">Commissione</div><div style="font-weight:500;font-size:15px;color:var(--accent)">€${(c.comm||0).toLocaleString('it-IT')}</div></div><div><div style="font-size:11px;color:#555;margin-bottom:2px">Budget</div><div style="font-size:13px;color:#ccc">€${(c.budget||0).toLocaleString('it-IT')}</div></div><div>${sBadge(c.stato)}</div><i class="ti ti-chevron-right" style="color:#555"></i></div>`).join('');return`<div class="pipe-total"><span style="font-size:13px;color:#AFA9EC;font-weight:500"><i class="ti ti-flame"></i> Commissioni in pipeline</span><span style="font-size:22px;font-weight:500;color:#EEEDFE">€${tot.toLocaleString('it-IT')}</span></div>${cards||'<div style="text-align:center;padding:40px;color:#555;font-size:13px">Nessuna trattativa attiva.</div>'}`;}
 function renderStats(){const tot=contacts.length;const urg=contacts.filter(c=>getPrio(c).label==='URGENTE').length;const comm=contacts.filter(c=>c.stato==='In trattativa').reduce((s,c)=>s+(c.comm||0),0);const stati={},agStat={};contacts.forEach(c=>{stati[c.stato]=(stati[c.stato]||0)+1;agStat[c.agente]=(agStat[c.agente]||0)+1;});const sRows=Object.entries(stati).map(([k,v])=>`<tr><td style="padding:10px 14px;color:#ccc">${k}</td><td style="padding:10px 14px;font-weight:500">${v}</td></tr>`).join('');const aRows=Object.entries(agStat).map(([k,v])=>`<tr><td style="padding:10px 14px;color:#ccc">${k}</td><td style="padding:10px 14px;font-weight:500">${v}</td></tr>`).join('');return`<div class="stats-grid"><div class="stat"><div class="lbl">Totale contatti</div><div class="val">${tot}</div></div><div class="stat"><div class="lbl">Urgenti oggi</div><div class="val" style="color:#E24B4A">${urg}</div></div><div class="stat"><div class="lbl">In trattativa</div><div class="val" style="color:#AFA9EC">${stati['In trattativa']||0}</div></div><div class="stat"><div class="lbl">Pipeline €</div><div class="val" style="font-size:18px;color:var(--accent)">€${comm.toLocaleString('it-IT')}</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div class="tbl-wrap"><table><thead><tr><th style="padding:10px 14px">Stato</th><th style="padding:10px 14px">N.</th></tr></thead><tbody>${sRows||'<tr><td colspan="2" style="padding:14px;color:#555;text-align:center">Nessun dato</td></tr>'}</tbody></table></div><div class="tbl-wrap"><table><thead><tr><th style="padding:10px 14px">Agente</th><th style="padding:10px 14px">N.</th></tr></thead><tbody>${aRows||'<tr><td colspan="2" style="padding:14px;color:#555;text-align:center">Nessun dato</td></tr>'}</tbody></table></div></div>`;}
 function renderAgenti(){return`<div class="agents-grid">${agents.map(a=>{const list=contacts.filter(c=>c.agente===a);const init=a.split(' ').map(w=>w[0]).join('').slice(0,2);const rows=list.map(c=>`<div class="acr" onclick="openDetail(${c.id})"><span>${c.nome}</span><span>${getPrio(c).e}</span></div>`).join('');return`<div class="agent-card"><div class="agent-avatar">${init}</div><div style="font-weight:500;font-size:14px;margin-bottom:3px">${a}</div><div style="font-size:12px;color:var(--t2);margin-bottom:10px">${list.length} contatt${list.length===1?'o':'i'}</div><div style="border-top:1px solid var(--border);padding-top:10px">${rows||'<span style="color:#555;font-size:12px">Nessun contatto</span>'}</div></div>`;}).join('')}</div>`;}
-
 function renderSettings(){const rows=agents.map((a,i)=>{const count=contacts.filter(c=>c.agente===a).length;const init=a.split(' ').map(w=>w[0]).join('').slice(0,2);return`<div class="setting-row"><div class="setting-av" id="sav-${i}">${init}</div><input type="text" value="${a}" id="sinput-${i}" onchange="renameAgent(${i},this.value)" onkeydown="if(event.key==='Enter')this.blur()"><span class="setting-count">${count} contatt${count===1?'o':'i'}</span></div>`;}).join('');return`<div><p style="font-size:13px;color:#888;margin-bottom:18px">Le modifiche agli agenti e al logo sono condivise per tutti.</p><div>${rows}</div><div style="margin-top:16px"><button class="btn-outline" onclick="addAgent()"><i class="ti ti-plus"></i> Aggiungi agente</button></div></div>`;}
 
-async function renameAgent(i,n){
-  agents[i]=n;
-  const av=document.getElementById(`sav-${i}`);
-  if(av)av.textContent=n.split(' ').map(w=>w[0]).join('').slice(0,2);
-  setSync('loading');
-  try{await setImpostazione('agents',JSON.stringify(agents));setSync('ok');showToast('Agente aggiornato');}
-  catch(e){setSync('error');showToast('Errore salvataggio');}
-}
-async function addAgent(){
-  agents.push('Nuovo Agente');
-  setSync('loading');
-  try{await setImpostazione('agents',JSON.stringify(agents));setSync('ok');renderView();}
-  catch(e){setSync('error');}
-}
+async function renameAgent(i,n){agents[i]=n;const av=document.getElementById(`sav-${i}`);if(av)av.textContent=n.split(' ').map(w=>w[0]).join('').slice(0,2);setSync('loading');try{await setImpostazione('agents',JSON.stringify(agents));setSync('ok');showToast('Agente aggiornato');}catch(e){setSync('error');showToast('Errore salvataggio');}}
+async function addAgent(){agents.push('Nuovo Agente');setSync('loading');try{await setImpostazione('agents',JSON.stringify(agents));setSync('ok');renderView();}catch(e){setSync('error');}}
 
 function openLogoModal(){pendingLogoUrl=null;document.getElementById('logo-preview-box').style.display='none';document.getElementById('btn-apply-logo').style.display='none';document.getElementById('btn-remove-logo').style.display=logoDataUrl?'':'none';document.getElementById('logo-file-input').value='';document.getElementById('logo-overlay').classList.add('open');}
 function closeLogoModal(){document.getElementById('logo-overlay').classList.remove('open');}
 function handleLogoUpload(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=ev=>{pendingLogoUrl=ev.target.result;document.getElementById('logo-preview-img').src=pendingLogoUrl;document.getElementById('logo-preview-box').style.display='block';document.getElementById('btn-apply-logo').style.display='';};reader.readAsDataURL(file);}
-async function applyLogo(){
-  if(!pendingLogoUrl)return;
-  logoDataUrl=pendingLogoUrl;
-  updateLogoDisplay();
-  setSync('loading');
-  try{await setImpostazione('logo',logoDataUrl);setSync('ok');showToast('Logo salvato per tutti');}
-  catch(e){setSync('error');showToast('Errore salvataggio logo');}
-  closeLogoModal();
-}
-async function removeLogo(){
-  logoDataUrl=null;
-  updateLogoDisplay();
-  setSync('loading');
-  try{await setImpostazione('logo','');setSync('ok');}catch(e){setSync('error');}
-  closeLogoModal();
-}
+async function applyLogo(){if(!pendingLogoUrl)return;logoDataUrl=pendingLogoUrl;updateLogoDisplay();setSync('loading');try{await setImpostazione('logo',logoDataUrl);setSync('ok');showToast('Logo salvato per tutti');}catch(e){setSync('error');showToast('Errore salvataggio logo');}closeLogoModal();}
+async function removeLogo(){logoDataUrl=null;updateLogoDisplay();setSync('loading');try{await setImpostazione('logo','');setSync('ok');}catch(e){setSync('error');}closeLogoModal();}
 function updateLogoDisplay(){document.getElementById('logo-content').innerHTML=logoDataUrl?`<img class="logo-display" src="${logoDataUrl}" alt="Logo">`:`<div class="logo-placeholder"><i class="ti ti-photo"></i> Carica logo</div>`;}
 
-function openContactModal(id){editingId=id||null;document.getElementById('f-agente').innerHTML=agents.map(a=>`<option>${a}</option>`).join('');document.getElementById('modal-title').textContent=id?'Modifica contatto':'Aggiungi contatto';document.getElementById('save-btn').textContent=id?'Salva modifiche':'Salva contatto';if(id){const c=contacts.find(x=>x.id===id);if(c){document.getElementById('f-nome').value=c.nome||'';document.getElementById('f-tel').value=c.tel||'';document.getElementById('f-email').value=c.email||'';document.getElementById('f-fonte').value=c.fonte||'Landing page';document.getElementById('f-tipo').value=c.tipo||'Acquirente';document.getElementById('f-zona').value=c.zona||'';document.getElementById('f-budget').value=c.budget||'';document.getElementById('f-tempistiche').value=c.tempistiche||'Subito';document.getElementById('f-stato').value=c.stato||'Da chiamare';document.getElementById('f-agente').value=c.agente||agents[0];document.getElementById('f-azione').value=c.pross_azione||'Richiama';document.getElementById('f-data-azione').value=c.data_pross||'';document.getElementById('f-note').value='';}}else{['f-nome','f-tel','f-email','f-zona','f-note'].forEach(fid=>document.getElementById(fid).value='');document.getElementById('f-budget').value='';document.getElementById('f-data-azione').value='';}document.getElementById('contact-overlay').classList.add('open');}
+function openContactModal(id){
+  editingId=id||null;
+  document.getElementById('f-agente').innerHTML=agents.map(a=>`<option>${a}</option>`).join('');
+  document.getElementById('modal-title').textContent=id?'Modifica contatto':'Aggiungi contatto';
+  document.getElementById('save-btn').textContent=id?'Salva modifiche':'Salva contatto';
+  if(id){
+    const c=contacts.find(x=>x.id===id);
+    if(c){
+      document.getElementById('f-nome').value=c.nome||'';
+      document.getElementById('f-tel').value=c.tel||'';
+      document.getElementById('f-email').value=c.email||'';
+      document.getElementById('f-fonte').value=c.fonte||'Landing page';
+      document.getElementById('f-tipo').value=c.tipo||'Acquirente';
+      document.getElementById('f-zona').value=c.zona||'';
+      document.getElementById('f-budget').value=c.budget||'';
+      document.getElementById('f-comm').value=c.comm||'';  // ← carica commissione salvata
+      document.getElementById('f-tempistiche').value=c.tempistiche||'Subito';
+      document.getElementById('f-stato').value=c.stato||'Da chiamare';
+      document.getElementById('f-agente').value=c.agente||agents[0];
+      document.getElementById('f-azione').value=c.pross_azione||'Richiama';
+      document.getElementById('f-data-azione').value=c.data_pross||'';
+      document.getElementById('f-note').value='';
+    }
+  }else{
+    ['f-nome','f-tel','f-email','f-zona','f-note'].forEach(fid=>document.getElementById(fid).value='');
+    document.getElementById('f-budget').value='';
+    document.getElementById('f-comm').value='';  // ← reset
+    document.getElementById('f-data-azione').value='';
+  }
+  document.getElementById('contact-overlay').classList.add('open');
+}
 function closeContactModal(){document.getElementById('contact-overlay').classList.remove('open');editingId=null;}
 
-async function saveContact(){const nome=document.getElementById('f-nome').value.trim();if(!nome){document.getElementById('f-nome').style.borderColor='#E24B4A';return;}const budget=parseInt(document.getElementById('f-budget').value)||0;const noteVal=document.getElementById('f-note').value.trim();setSync('loading');try{if(editingId){const c=contacts.find(x=>x.id===editingId);const acts=Array.isArray(c.activities)?[...c.activities]:[];if(noteVal)acts.push({id:Date.now(),type:'nota',text:noteVal,date:nowStr()});await updateContatto(editingId,{nome,tel:document.getElementById('f-tel').value,email:document.getElementById('f-email').value,fonte:document.getElementById('f-fonte').value,tipo:document.getElementById('f-tipo').value,zona:document.getElementById('f-zona').value,budget,comm:Math.round(budget*0.03),tempistiche:document.getElementById('f-tempistiche').value,stato:document.getElementById('f-stato').value,agente:document.getElementById('f-agente').value,pross_azione:document.getElementById('f-azione').value,data_pross:document.getElementById('f-data-azione').value,activities:acts});showToast('Contatto aggiornato');}else{const acts=noteVal?[{id:1,type:'nota',text:noteVal,date:nowStr()}]:[];await insertContatto({nome,tel:document.getElementById('f-tel').value,email:document.getElementById('f-email').value,fonte:document.getElementById('f-fonte').value,tipo:document.getElementById('f-tipo').value,zona:document.getElementById('f-zona').value,budget,comm:Math.round(budget*0.03),tempistiche:document.getElementById('f-tempistiche').value,ultimo_contatto:new Date().toISOString().slice(0,10),pross_azione:document.getElementById('f-azione').value,data_pross:document.getElementById('f-data-azione').value,stato:document.getElementById('f-stato').value,agente:document.getElementById('f-agente').value,activities:acts});showToast('Contatto salvato');}setSync('ok');closeContactModal();await loadContacts();}catch(e){setSync('error');showToast('Errore: '+e.message);}}
+async function saveContact(){
+  const nome=document.getElementById('f-nome').value.trim();
+  if(!nome){document.getElementById('f-nome').style.borderColor='#E24B4A';return;}
+  const budget=parseInt(document.getElementById('f-budget').value)||0;
+  const comm=parseInt(document.getElementById('f-comm').value)||0;  // ← legge dal campo, niente calcolo automatico
+  const noteVal=document.getElementById('f-note').value.trim();
+  setSync('loading');
+  try{
+    if(editingId){
+      const c=contacts.find(x=>x.id===editingId);
+      const acts=Array.isArray(c.activities)?[...c.activities]:[];
+      if(noteVal)acts.push({id:Date.now(),type:'nota',text:noteVal,date:nowStr()});
+      await updateContatto(editingId,{
+        nome,tel:document.getElementById('f-tel').value,email:document.getElementById('f-email').value,
+        fonte:document.getElementById('f-fonte').value,tipo:document.getElementById('f-tipo').value,
+        zona:document.getElementById('f-zona').value,budget,comm,  // ← comm manuale
+        tempistiche:document.getElementById('f-tempistiche').value,stato:document.getElementById('f-stato').value,
+        agente:document.getElementById('f-agente').value,pross_azione:document.getElementById('f-azione').value,
+        data_pross:document.getElementById('f-data-azione').value,activities:acts
+      });
+      showToast('Contatto aggiornato');
+    }else{
+      const acts=noteVal?[{id:1,type:'nota',text:noteVal,date:nowStr()}]:[];
+      await insertContatto({
+        nome,tel:document.getElementById('f-tel').value,email:document.getElementById('f-email').value,
+        fonte:document.getElementById('f-fonte').value,tipo:document.getElementById('f-tipo').value,
+        zona:document.getElementById('f-zona').value,budget,comm,  // ← comm manuale
+        tempistiche:document.getElementById('f-tempistiche').value,
+        ultimo_contatto:new Date().toISOString().slice(0,10),
+        pross_azione:document.getElementById('f-azione').value,data_pross:document.getElementById('f-data-azione').value,
+        stato:document.getElementById('f-stato').value,agente:document.getElementById('f-agente').value,activities:acts
+      });
+      showToast('Contatto salvato');
+    }
+    setSync('ok');closeContactModal();await loadContacts();
+  }catch(e){setSync('error');showToast('Errore: '+e.message);}
+}
 
 async function deleteContact(id){if(!confirm('Eliminare questo contatto?'))return;setSync('loading');try{await deleteContatto(id);setSync('ok');showToast('Contatto eliminato');await loadContacts();}catch(e){setSync('error');showToast('Errore: '+e.message);}}
 
 function openDetail(id){detailId=id;selType='nota';renderDetailPanel();document.getElementById('detail-overlay').classList.add('open');}
 function closeDetail(){document.getElementById('detail-overlay').classList.remove('open');detailId=null;}
-function renderDetailPanel(){const c=contacts.find(x=>x.id===detailId);if(!c)return;const p=getPrio(c);const typeLabels={nota:'Nota',chiamata:'Chiamata',email:'Email',whatsapp:'WhatsApp',appuntamento:'Appuntamento'};const chips=['nota','chiamata','email','whatsapp','appuntamento'].map(t=>`<span class="chip${t===selType?' on':''}" onclick="selActType('${t}')">${typeLabels[t]}</span>`).join('');const acts=Array.isArray(c.activities)?c.activities:[];const sorted=[...acts].sort((a,b)=>new Date(b.date)-new Date(a.date));const actItems=sorted.map((act,i)=>`<div class="act-item"><div class="act-dot-col"><div class="act-dot dot-${act.type}">${aIcon(act.type)}</div>${i<sorted.length-1?'<div class="act-line"></div>':''}</div><div class="act-content"><span class="act-type-lbl">${typeLabels[act.type]||act.type}</span><span class="act-date-lbl">${fmtDate(act.date)}</span><div class="act-text">${act.text}</div></div></div>`).join('');document.getElementById('detail-panel').innerHTML=`<div class="dp-header"><div><div class="dp-name">${c.nome}</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${tBadge(c.tipo)} ${sBadge(c.stato)} <span style="font-size:11px;color:#555">${p.e} ${p.label}</span></div><div style="display:flex;gap:16px;font-size:12px;color:#888;flex-wrap:wrap"><span><i class="ti ti-phone"></i> ${c.tel||'—'}</span><span><i class="ti ti-mail"></i> ${c.email||'—'}</span><span><i class="ti ti-map-pin"></i> ${c.zona||'—'}</span><span><i class="ti ti-user"></i> ${c.agente||'—'}</span></div></div><button class="btn-ghost" onclick="closeDetail()"><i class="ti ti-x"></i></button></div><div class="dp-body"><div class="dp-section"><div class="dp-stitle">Dettagli</div><div class="dp-grid"><div class="dp-field"><label>Budget</label><span style="color:var(--accent)">€${(c.budget||0).toLocaleString('it-IT')}</span></div><div class="dp-field"><label>Commissione (3%)</label><span style="color:var(--accent)">€${(c.comm||0).toLocaleString('it-IT')}</span></div><div class="dp-field"><label>Fonte</label><span>${c.fonte||'—'}</span></div><div class="dp-field"><label>Tempistiche</label><span>${c.tempistiche||'—'}</span></div><div class="dp-field"><label>Prossima azione</label><span>${c.pross_azione||'—'}</span></div><div class="dp-field"><label>Data azione</label><span>${c.data_pross||'—'}</span></div></div><div style="margin-top:14px"><button class="act-btn act-btn-edit" onclick="closeDetail();openContactModal(${c.id})"><i class="ti ti-edit"></i> Modifica contatto</button></div></div><div class="act-area"><span class="act-lbl">Aggiungi attività</span><div class="chips">${chips}</div><textarea class="act-ta" id="act-text" placeholder="Descrivi l'attività svolta..."></textarea><div style="display:flex;justify-content:flex-end;margin-top:10px"><button class="btn-accent" onclick="addActivity()"><i class="ti ti-check"></i> Salva attività</button></div></div><div class="act-log"><div class="act-log-title">Cronologia — ${acts.length} attività</div>${actItems||'<div style="text-align:center;padding:28px;color:#555;font-size:13px"><i class="ti ti-history" style="font-size:24px;display:block;margin-bottom:10px"></i>Nessuna attività registrata.</div>'}</div></div>`;}
+function renderDetailPanel(){
+  const c=contacts.find(x=>x.id===detailId);if(!c)return;
+  const p=getPrio(c);
+  const typeLabels={nota:'Nota',chiamata:'Chiamata',email:'Email',whatsapp:'WhatsApp',appuntamento:'Appuntamento'};
+  const chips=['nota','chiamata','email','whatsapp','appuntamento'].map(t=>`<span class="chip${t===selType?' on':''}" onclick="selActType('${t}')">${typeLabels[t]}</span>`).join('');
+  const acts=Array.isArray(c.activities)?c.activities:[];
+  const sorted=[...acts].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const actItems=sorted.map((act,i)=>`<div class="act-item"><div class="act-dot-col"><div class="act-dot dot-${act.type}">${aIcon(act.type)}</div>${i<sorted.length-1?'<div class="act-line"></div>':''}</div><div class="act-content"><span class="act-type-lbl">${typeLabels[act.type]||act.type}</span><span class="act-date-lbl">${fmtDate(act.date)}</span><div class="act-text">${act.text}</div></div></div>`).join('');
+  document.getElementById('detail-panel').innerHTML=`<div class="dp-header"><div><div class="dp-name">${c.nome}</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${tBadge(c.tipo)} ${sBadge(c.stato)} <span style="font-size:11px;color:#555">${p.e} ${p.label}</span></div><div style="display:flex;gap:16px;font-size:12px;color:#888;flex-wrap:wrap"><span><i class="ti ti-phone"></i> ${c.tel||'—'}</span><span><i class="ti ti-mail"></i> ${c.email||'—'}</span><span><i class="ti ti-map-pin"></i> ${c.zona||'—'}</span><span><i class="ti ti-user"></i> ${c.agente||'—'}</span></div></div><button class="btn-ghost" onclick="closeDetail()"><i class="ti ti-x"></i></button></div><div class="dp-body"><div class="dp-section"><div class="dp-stitle">Dettagli</div><div class="dp-grid"><div class="dp-field"><label>Budget</label><span style="color:var(--accent)">€${(c.budget||0).toLocaleString('it-IT')}</span></div><div class="dp-field"><label>Commissione</label><span style="color:var(--accent)">€${(c.comm||0).toLocaleString('it-IT')}</span></div><div class="dp-field"><label>Fonte</label><span>${c.fonte||'—'}</span></div><div class="dp-field"><label>Tempistiche</label><span>${c.tempistiche||'—'}</span></div><div class="dp-field"><label>Prossima azione</label><span>${c.pross_azione||'—'}</span></div><div class="dp-field"><label>Data azione</label><span>${c.data_pross||'—'}</span></div></div><div style="margin-top:14px"><button class="act-btn act-btn-edit" onclick="closeDetail();openContactModal(${c.id})"><i class="ti ti-edit"></i> Modifica contatto</button></div></div><div class="act-area"><span class="act-lbl">Aggiungi attività</span><div class="chips">${chips}</div><textarea class="act-ta" id="act-text" placeholder="Descrivi l'attività svolta..."></textarea><div style="display:flex;justify-content:flex-end;margin-top:10px"><button class="btn-accent" onclick="addActivity()"><i class="ti ti-check"></i> Salva attività</button></div></div><div class="act-log"><div class="act-log-title">Cronologia — ${acts.length} attività</div>${actItems||'<div style="text-align:center;padding:28px;color:#555;font-size:13px"><i class="ti ti-history" style="font-size:24px;display:block;margin-bottom:10px"></i>Nessuna attività registrata.</div>'}</div></div>`;
+}
 function selActType(t){selType=t;document.querySelectorAll('.chip').forEach(el=>el.classList.toggle('on',el.getAttribute('onclick').includes(`'${t}'`)));}
 async function addActivity(){const ta=document.getElementById('act-text');const text=ta?ta.value.trim():'';if(!text){if(ta)ta.style.borderColor='#E24B4A';return;}const c=contacts.find(x=>x.id===detailId);if(!c)return;const acts=Array.isArray(c.activities)?[...c.activities]:[];acts.push({id:Date.now(),type:selType,text,date:nowStr()});setSync('loading');try{await updateContatto(c.id,{activities:acts,ultimo_contatto:new Date().toISOString().slice(0,10)});setSync('ok');showToast('Attività salvata');await loadContacts();renderDetailPanel();}catch(e){setSync('error');showToast('Errore: '+e.message);}}
 
